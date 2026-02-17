@@ -1,37 +1,15 @@
 import pg from 'pg';
 import type { Todo } from '../types.js';
 
-/**
- * Gets a PostgreSQL connection pool.
- * @returns Connection pool
- */
 function getPool(): pg.Pool {
   const { DATABASE_URL } = process.env;
-
   if (!DATABASE_URL) {
     console.error('DATABASE_URL not set');
     process.exit(1);
   }
-
-  const pool = new pg.Pool({
-    connectionString: DATABASE_URL,
-  });
-
-  pool.on('error', (err: Error) => {
-    console.error('Unexpected error on idle client', err);
-    process.exit(-1);
-  });
-
-  return pool;
+  return new pg.Pool({ connectionString: DATABASE_URL });
 }
 
-/**
- * Run a query against the database.
- * Generic to allow typing the result rows.
- * @param q Query to run.
- * @param values Values to parameterize the query with.
- * @returns Query result.
- */
 async function query<T extends pg.QueryResultRow>(
   q: string,
   values: unknown[] = [],
@@ -48,10 +26,6 @@ async function query<T extends pg.QueryResultRow>(
   }
 }
 
-/**
- * Initialize the database by creating necessary table.
- * @returns True if the initialization succeeded, false otherwise.
- */
 export async function init(): Promise<boolean> {
   try {
     const result = await query(`
@@ -69,10 +43,6 @@ export async function init(): Promise<boolean> {
   }
 }
 
-/**
- * Get all todo items from the database.
- * @returns All todo items, or null on error.
- */
 export async function listTodos(): Promise<Todo[] | null> {
   const q = 'SELECT id, title, finished, created FROM todos ORDER BY finished ASC, created DESC';
   try {
@@ -85,43 +55,55 @@ export async function listTodos(): Promise<Todo[] | null> {
   }
   return null;
 }
-/**
- * Create a new todo item in the database.
- * @param title Title of the todo item to create.
- * @returns Created todo item or null on error.
- */
+
 export async function createTodo(title: string): Promise<Todo | null> {
-  // INSERT INTO todos (title) VALUES ($1) RETURNING id, title, finished
+  const q = 'INSERT INTO todos (title) VALUES ($1) RETURNING id, title, finished, created';
+  try {
+    const result = await query<Todo>(q, [title]);
+    if (result && result.rows.length > 0) {
+      return result.rows[0];
+    }
+  } catch (e) {
+    console.error('Error creating todo', e);
+  }
+  return null;
 }
 
-/**
- * Update a todo item in the database.
- * @param id ID of the todo item to update.
- * @param title New title of the todo item.
- * @param finished New finished status of the todo item.
- * @returns Updated todo item or null on error.
- */
 export async function updateTodo(
   id: number,
   title: string,
   finished: boolean,
 ): Promise<Todo | null> {
-  // UPDATE todos SET title = $1, finished = $2 WHERE id = $3 RETURNING id, title, finished
+  const q = 'UPDATE todos SET title = $1, finished = $2 WHERE id = $3 RETURNING id, title, finished, created';
+  try {
+    const result = await query<Todo>(q, [title, finished, id]);
+    if (result && result.rows.length > 0) {
+      return result.rows[0];
+    }
+  } catch (e) {
+    console.error('Error updating todo', e);
+  }
+  return null;
 }
 
-/**
- * Delete a todo item from the database.
- * @param id ID of the todo item to delete.
- * @returns True if the todo item was deleted, false if not found, or null on error.
- */
 export async function deleteTodo(id: number): Promise<boolean | null> {
-  // DELETE FROM todos WHERE id = $1
+  const q = 'DELETE FROM todos WHERE id = $1';
+  try {
+    const result = await query(q, [id]);
+    return (result?.rowCount ?? 0) > 0;
+  } catch (e) {
+    console.error('Error deleting todo', e);
+    return null;
+  }
 }
 
-/**
- * Delete all finished todo items from the database.
- * @returns Number of deleted todo items, or null on error.
- */
 export async function deleteFinishedTodos(): Promise<number | null> {
-  // DELETE FROM todos WHERE finished = true
+  const q = 'DELETE FROM todos WHERE finished = true';
+  try {
+    const result = await query(q);
+    return result?.rowCount ?? 0;
+  } catch (e) {
+    console.error('Error deleting finished todos', e);
+    return null;
+  }
 }
