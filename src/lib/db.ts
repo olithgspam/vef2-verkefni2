@@ -53,16 +53,20 @@ async function query<T extends pg.QueryResultRow>(
  * @returns True if the initialization succeeded, false otherwise.
  */
 export async function init(): Promise<boolean> {
-  // búum til töfluna okkar ef hún er ekki til
-  // SQL til þess:
-  /*
-  CREATE TABLE IF NOT EXISTS todos (
-      id SERIAL PRIMARY KEY,
-      title VARCHAR(255) NOT NULL,
-      finished BOOLEAN NOT NULL DEFAULT false,
-      created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    )
-  */
+  try {
+    const result = await query(`
+      CREATE TABLE IF NOT EXISTS todos (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        finished BOOLEAN NOT NULL DEFAULT false,
+        created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    return result !== null;
+  } catch (e) {
+    console.error('Error initializing database', e);
+    return false;
+  }
 }
 
 /**
@@ -70,9 +74,17 @@ export async function init(): Promise<boolean> {
  * @returns All todo items, or null on error.
  */
 export async function listTodos(): Promise<Todo[] | null> {
-  // SELECT id, title, finished FROM todos ORDER BY finished ASC, created DESC
+  const q = 'SELECT id, title, finished, created FROM todos ORDER BY finished ASC, created DESC';
+  try {
+    const result = await query<Todo>(q);
+    if (result) {
+      return result.rows;
+    }
+  } catch (e) {
+    console.error('Error fetching todos', e);
+  }
+  return null;
 }
-
 /**
  * Create a new todo item in the database.
  * @param title Title of the todo item to create.

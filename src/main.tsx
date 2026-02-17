@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { TodoPage } from './components/TodoPage.js';
-
-// búum til og exportum Hono app
+import { listTodos } from './lib/db.js';
 export const app = new Hono();
 
-// sendir út allt sem er í static möppunni
 app.use('/static/*', serveStatic({ root: './' }));
 
 app.get('/', async (c) => {
-  return c.html(<TodoPage todos={[1, 2, 3]} />);
+  const todos = await listTodos();
+  
+  return c.html(<TodoPage todos={todos || []} />);
 });
