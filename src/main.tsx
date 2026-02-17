@@ -19,7 +19,7 @@ app.post('/add', async (c) => {
 
   if (!result.success) {
     const todos = await listTodos();
-    const errorMessages = result.error.errors.map((e) => e.message);
+    const errorMessages = (result as any).error.errors.map((e: any) => e.message);
     return c.html(<TodoPage todos={todos || []} errors={errorMessages} />);
   }
 

@@ -27,13 +27,13 @@ export const TodoPage: FC<TodoPageProps> = ({ todos, errors = [] }) => {
             </div>
           )}
 
-          <form action="/add" method="POST" className="add-form">
+          <form action="/add" method="post" className="add-form">
             <input type="text" name="title" placeholder="Hvað þarf að gera?" required />
             <button type="submit">Bæta við</button>
           </form>
 
           {hasFinishedTodos && (
-            <form action="/delete-finished" method="POST" className="delete-finished-form">
+            <form action="/delete-finished" method="post" className="delete-finished-form">
               <button type="submit" className="danger-btn">Eyða kláruðum verkefnum</button>
             </form>
           )}
@@ -41,12 +41,11 @@ export const TodoPage: FC<TodoPageProps> = ({ todos, errors = [] }) => {
           <ul className="todo-list">
             {todos.map((todo) => (
               <li key={todo.id} className={todo.finished ? 'finished' : ''}>
-                <form action={`/update/${todo.id}`} method="POST" className="item-form">
+                <form action={`/update/${todo.id}`} method="post" className="item-form">
                   <input 
                     type="checkbox" 
                     name="finished" 
-                    checked={todo.finished} 
-                    onChange="this.form.submit()"
+                    defaultChecked={todo.finished} 
                   />
                   <input 
                     type="text" 
@@ -56,7 +55,7 @@ export const TodoPage: FC<TodoPageProps> = ({ todos, errors = [] }) => {
                   <button type="submit">Uppfæra</button>
                 </form>
 
-                <form action={`/delete/${todo.id}`} method="POST" className="delete-form">
+                <form action={`/delete/${todo.id}`} method="post" className="delete-form">
                   <button type="submit" aria-label="Eyða">🗑️</button>
                 </form>
               </li>
